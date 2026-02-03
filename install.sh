@@ -190,7 +190,7 @@ print_complete() {
     echo "  2. Install OpenClaw: npm install -g openclaw"
     echo "  3. Run onboarding: openclaw onboarding"
     echo "     → Select 'Loopback (127.0.0.1)' when asked!"
-    echo "  4. Start gateway: openclaw gateway --verbose"
+    echo "  4. Start gateway: openclawdx start"
     echo ""
     echo -e "Dashboard: ${BLUE}http://127.0.0.1:18789${NC}"
     echo ""

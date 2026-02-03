@@ -6,13 +6,13 @@ Run OpenClaw AI Gateway on Android using Termux with the Bionic Bypass fix.
 
 **One-liner (recommended):**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mithun50/openclawd-termux/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/mithun50/openclawdx-termux/main/install.sh | bash
 ```
 
 **Or via npm:**
 ```bash
-npm install -g openclawd-termux
-openclawd setup
+npm install -g openclawdx-termux
+openclawdxx setup
 ```
 
 ## Requirements
@@ -31,16 +31,16 @@ openclawd setup
 
 ```bash
 # First-time setup
-openclawd setup
+openclawdxx setup
 
 # Check installation status
-openclawd status
+openclawdx status
 
 # Start OpenClaw gateway
-openclawd start
+openclawdx start
 
 # Show help
-openclawd help
+openclawdx help
 ```
 
 ## Manual Setup
@@ -54,8 +54,8 @@ pkg update && pkg install -y nodejs-lts git
 
 ### 2. Create Bionic Bypass script
 ```bash
-mkdir -p ~/.openclawd
-cat > ~/.openclawd/bionic-bypass.js << 'EOF'
+mkdir -p ~/.openclawdx
+cat > ~/.openclawdx/bionic-bypass.js << 'EOF'
 const os = require('os');
 const originalNetworkInterfaces = os.networkInterfaces;
 os.networkInterfaces = function() {
@@ -81,7 +81,7 @@ EOF
 
 ### 3. Configure shell
 ```bash
-echo 'export NODE_OPTIONS="--require $HOME/.openclawd/bionic-bypass.js"' >> ~/.bashrc
+echo 'export NODE_OPTIONS="--require $HOME/.openclawdx/bionic-bypass.js"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -110,7 +110,7 @@ Settings → Apps → Termux → Battery → Unrestricted
 
 To keep Termux running while screen is off:
 ```bash
-~/.openclawd/wakelock.sh openclaw gateway
+~/.openclawdx/wakelock.sh openclaw gateway
 ```
 
 ## Commands
@@ -130,7 +130,7 @@ Access the web dashboard at: `http://127.0.0.1:18789`
 ### "os.networkInterfaces is not a function"
 The Bionic Bypass isn't loaded. Run:
 ```bash
-openclawd setup
+openclawdxx setup
 source ~/.bashrc
 ```
 

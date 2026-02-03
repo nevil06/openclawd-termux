@@ -5,8 +5,8 @@
   "main": "lib/index.js",
   "type": "module",
   "bin": {
-    "openclawd": "./bin/openclawd",
-    "openclawd-setup": "./bin/openclawd"
+    "openclawdx": "./bin/openclawdx",
+    "openclawdx-setup": "./bin/openclawdx"
   },
   "scripts": {
     "test": "node lib/test.js",
