@@ -120,7 +120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: Text(
                     'AI Gateway for Android\nVersion ${AppConstants.version}',
                   ),
-                  leading: const Icon(Icons.info_outline),
+                  leading: Icon(Icons.info_outline),
                   isThreeLine: true,
                 ),
               ],
