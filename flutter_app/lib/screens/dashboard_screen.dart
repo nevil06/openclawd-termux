@@ -4,6 +4,7 @@ import '../constants.dart';
 import '../providers/gateway_provider.dart';
 import '../widgets/gateway_controls.dart';
 import '../widgets/status_card.dart';
+import 'onboarding_screen.dart';
 import 'terminal_screen.dart';
 import 'web_dashboard_screen.dart';
 import 'logs_screen.dart';
@@ -71,6 +72,16 @@ class DashboardScreen extends StatelessWidget {
                       : null,
                 );
               },
+            ),
+            StatusCard(
+              title: 'Onboarding',
+              subtitle: 'Configure API keys and binding',
+              icon: Icons.vpn_key,
+              color: Colors.deepPurple,
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+              ),
             ),
             StatusCard(
               title: 'Logs',

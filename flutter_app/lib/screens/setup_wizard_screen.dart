@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/setup_state.dart';
 import '../providers/setup_provider.dart';
-import '../services/preferences_service.dart';
 import '../widgets/progress_step.dart';
-import 'dashboard_screen.dart';
+import 'onboarding_screen.dart';
 
 class SetupWizardScreen extends StatefulWidget {
   const SetupWizardScreen({super.key});
@@ -83,9 +82,9 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
-                        onPressed: () => _goToDashboard(context),
+                        onPressed: () => _goToOnboarding(context),
                         icon: const Icon(Icons.arrow_forward),
-                        label: const Text('Go to Dashboard'),
+                        label: const Text('Configure API Keys'),
                       ),
                     )
                   else if (!_started || state.hasError)
@@ -152,17 +151,11 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
     );
   }
 
-  Future<void> _goToDashboard(BuildContext context) async {
-    final navigator = Navigator.of(context);
-    final prefs = PreferencesService();
-    await prefs.init();
-    prefs.setupComplete = true;
-    prefs.isFirstRun = false;
-
-    if (mounted) {
-      navigator.pushReplacement(
-        MaterialPageRoute(builder: (_) => const DashboardScreen()),
-      );
-    }
+  void _goToOnboarding(BuildContext context) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const OnboardingScreen(isFirstRun: true),
+      ),
+    );
   }
 }
