@@ -106,26 +106,10 @@ class BootstrapService {
 
       onProgress(const SetupState(
         step: SetupStep.installingNode,
-        progress: 0.05,
-        message: 'Verifying dpkg...',
-      ));
-      await NativeBridge.runInProot('dpkg --version');
-
-      onProgress(const SetupState(
-        step: SetupStep.installingNode,
         progress: 0.1,
         message: 'Updating package lists...',
       ));
       await NativeBridge.runInProot('apt-get update -y');
-
-      onProgress(const SetupState(
-        step: SetupStep.installingNode,
-        progress: 0.15,
-        message: 'Configuring pending packages...',
-      ));
-      await NativeBridge.runInProot(
-        'dpkg --configure -a 2>&1 || true',
-      );
 
       onProgress(const SetupState(
         step: SetupStep.installingNode,
@@ -144,55 +128,41 @@ class BootstrapService {
       onProgress(const SetupState(
         step: SetupStep.installingNode,
         progress: 0.25,
-        message: 'Installing base packages via dpkg...',
+        message: 'Extracting base packages...',
       ));
-      // Run dpkg -i directly (bypasses APT's fork→exec that fails on Android 10+).
-      // Let errors through so we can diagnose issues, but don't abort on partial
-      // failures since dependency ordering may cause some packages to fail first.
-      try {
-        await NativeBridge.runInProot(
-          'dpkg --force-depends --force-overwrite --force-confnew '
-          '-i /var/cache/apt/archives/*.deb',
-        );
-      } catch (e) {
-        // dpkg -i with unordered debs often exits non-zero due to dependency
-        // issues; --configure -a below will resolve them.
-      }
+      // CRITICAL: On Android 10+ (W^X), no process inside proot can fork+exec
+      // another process — only bash's direct exec works (level 1). This means:
+      //   - dpkg -i FAILS (dpkg forks dpkg-deb internally)
+      //   - apt-get install FAILS (apt forks dpkg internally)
+      // Workaround: use dpkg-deb -x directly (bash execs it, no fork needed)
+      // to extract .deb contents, then fix permissions.
+      await NativeBridge.runInProot(
+        'for f in /var/cache/apt/archives/*.deb; do '
+        '  dpkg-deb -x "\$f" / 2>/dev/null; '
+        'done; '
+        'echo extract_done',
+      );
 
-      // Fix permissions on newly installed binaries (dpkg inside proot may
-      // not set execute bits correctly on Android's filesystem)
+      // Fix permissions on newly extracted binaries
       await NativeBridge.runInProot(
         'chmod -R 755 /usr/bin /usr/sbin /bin /sbin 2>/dev/null; '
-        'chmod -R +x /usr/lib/apt/ /usr/lib/dpkg/ '
-        '/var/lib/dpkg/info/ 2>/dev/null; '
+        'chmod -R +x /usr/lib/ /var/lib/dpkg/info/ 2>/dev/null; '
         'echo chmod_done',
       );
 
-      // Configure any packages left unconfigured
-      onProgress(const SetupState(
-        step: SetupStep.installingNode,
-        progress: 0.3,
-        message: 'Configuring packages...',
-      ));
+      // Verify curl binary exists after extraction
       try {
         await NativeBridge.runInProot(
-          'dpkg --configure -a --force-all',
+          'test -f /usr/bin/curl && echo curl_found',
         );
       } catch (e) {
-        // Some post-inst scripts may fail in proot, continue anyway
-      }
-
-      // Verify curl is available before proceeding
-      try {
-        await NativeBridge.runInProot('which curl');
-      } catch (e) {
-        // curl not found — show what dpkg thinks about it for diagnostics
-        final status = await NativeBridge.runInProot(
-          'dpkg -l curl 2>&1 || echo "curl package not found"; '
-          'ls -la /usr/bin/curl 2>&1 || echo "/usr/bin/curl missing"',
+        final diag = await NativeBridge.runInProot(
+          'ls /var/cache/apt/archives/*.deb 2>/dev/null | head -20; '
+          'echo "---"; '
+          'ls /usr/bin/curl 2>&1 || echo "curl binary missing"',
         );
         throw Exception(
-          'curl not installed after dpkg. Status: $status',
+          'curl not extracted from debs. Diagnostics: $diag',
         );
       }
 
@@ -201,10 +171,30 @@ class BootstrapService {
         progress: 0.4,
         message: 'Adding NodeSource repository...',
       ));
+      // The NodeSource setup script internally runs apt-get which fails
+      // (fork+exec issue). Add the repo manually instead.
+      // NOTE: pipes (cmd1 | cmd2) require bash to fork two processes,
+      // which may fail. Use a temp file instead.
       await NativeBridge.runInProot(
-        'curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource_setup.sh && '
-        'bash /tmp/nodesource_setup.sh',
+        'mkdir -p /usr/share/keyrings; '
+        'curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key '
+        '-o /tmp/nodesource.gpg.key',
       );
+      await NativeBridge.runInProot(
+        'gpg --dearmor -o /usr/share/keyrings/nodesource.gpg '
+        '< /tmp/nodesource.gpg.key 2>/dev/null; '
+        'echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] '
+        'https://deb.nodesource.com/node_22.x nodistro main" '
+        '> /etc/apt/sources.list.d/nodesource.list; '
+        'echo repo_added',
+      );
+
+      onProgress(const SetupState(
+        step: SetupStep.installingNode,
+        progress: 0.5,
+        message: 'Updating package lists...',
+      ));
+      await NativeBridge.runInProot('apt-get update -y');
 
       onProgress(const SetupState(
         step: SetupStep.installingNode,
@@ -218,27 +208,15 @@ class BootstrapService {
       onProgress(const SetupState(
         step: SetupStep.installingNode,
         progress: 0.75,
-        message: 'Installing Node.js via dpkg...',
+        message: 'Extracting Node.js packages...',
       ));
-      try {
-        await NativeBridge.runInProot(
-          'dpkg --force-depends --force-overwrite --force-confnew '
-          '-i /var/cache/apt/archives/*.deb',
-        );
-      } catch (e) {
-        // Dependency ordering issues; configure below will resolve
-      }
       await NativeBridge.runInProot(
+        'for f in /var/cache/apt/archives/*.deb; do '
+        '  dpkg-deb -x "\$f" / 2>/dev/null; '
+        'done; '
         'chmod -R 755 /usr/bin /usr/sbin /bin /sbin 2>/dev/null; '
-        'echo chmod_done',
+        'echo extract_done',
       );
-      try {
-        await NativeBridge.runInProot(
-          'dpkg --configure -a --force-all',
-        );
-      } catch (e) {
-        // Some post-inst scripts may fail in proot
-      }
 
       onProgress(const SetupState(
         step: SetupStep.installingNode,
