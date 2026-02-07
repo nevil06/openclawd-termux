@@ -130,15 +130,20 @@ class BootstrapService {
         progress: 0.25,
         message: 'Extracting base packages...',
       ));
-      // CRITICAL: On Android 10+ (W^X), no process inside proot can fork+exec
-      // another process — only bash's direct exec works (level 1). This means:
-      //   - dpkg -i FAILS (dpkg forks dpkg-deb internally)
-      //   - apt-get install FAILS (apt forks dpkg internally)
-      // Workaround: use dpkg-deb -x directly (bash execs it, no fork needed)
-      // to extract .deb contents, then fix permissions.
+      // CRITICAL: On Android 10+ (W^X), subprocess forking inside proot
+      // is broken. dpkg-deb may also fork decompressors internally.
+      // Use ar+tar (shell builtins/single-exec tools) to extract debs.
+      // A .deb is an ar archive containing data.tar.{xz,zst,gz}.
       await NativeBridge.runInProot(
+        'cd /tmp; '
         'for f in /var/cache/apt/archives/*.deb; do '
-        '  dpkg-deb -x "\$f" / 2>/dev/null; '
+        '  ar x "\$f" 2>/dev/null; '
+        '  if [ -f data.tar.xz ]; then xz -d data.tar.xz && tar xf data.tar -C / 2>/dev/null; '
+        '  elif [ -f data.tar.zst ]; then zstd -d data.tar.zst -o data.tar 2>/dev/null && tar xf data.tar -C / 2>/dev/null; '
+        '  elif [ -f data.tar.gz ]; then gzip -d data.tar.gz && tar xf data.tar -C / 2>/dev/null; '
+        '  elif [ -f data.tar ]; then tar xf data.tar -C / 2>/dev/null; '
+        '  fi; '
+        '  rm -f data.tar* control.tar* debian-binary _gpgorigin 2>/dev/null; '
         'done; '
         'echo extract_done',
       );
@@ -156,14 +161,16 @@ class BootstrapService {
           'test -f /usr/bin/curl && echo curl_found',
         );
       } catch (e) {
-        final diag = await NativeBridge.runInProot(
-          'ls /var/cache/apt/archives/*.deb 2>/dev/null | head -20; '
-          'echo "---"; '
-          'ls /usr/bin/curl 2>&1 || echo "curl binary missing"',
-        );
-        throw Exception(
-          'curl not extracted from debs. Diagnostics: $diag',
-        );
+        // If ar+tar approach failed, try dpkg-deb as fallback with errors visible
+        try {
+          await NativeBridge.runInProot(
+            'dpkg-deb -x /var/cache/apt/archives/curl_*.deb /',
+          );
+        } catch (e2) {
+          throw Exception(
+            'Cannot extract debs. dpkg-deb error: $e2',
+          );
+        }
       }
 
       onProgress(const SetupState(
@@ -211,8 +218,15 @@ class BootstrapService {
         message: 'Extracting Node.js packages...',
       ));
       await NativeBridge.runInProot(
+        'cd /tmp; '
         'for f in /var/cache/apt/archives/*.deb; do '
-        '  dpkg-deb -x "\$f" / 2>/dev/null; '
+        '  ar x "\$f" 2>/dev/null; '
+        '  if [ -f data.tar.xz ]; then xz -d data.tar.xz && tar xf data.tar -C / 2>/dev/null; '
+        '  elif [ -f data.tar.zst ]; then zstd -d data.tar.zst -o data.tar 2>/dev/null && tar xf data.tar -C / 2>/dev/null; '
+        '  elif [ -f data.tar.gz ]; then gzip -d data.tar.gz && tar xf data.tar -C / 2>/dev/null; '
+        '  elif [ -f data.tar ]; then tar xf data.tar -C / 2>/dev/null; '
+        '  fi; '
+        '  rm -f data.tar* control.tar* debian-binary _gpgorigin 2>/dev/null; '
         'done; '
         'chmod -R 755 /usr/bin /usr/sbin /bin /sbin 2>/dev/null; '
         'echo extract_done',
