@@ -40,15 +40,25 @@ class TerminalService {
     final procFakes = '${config['configDir']}/proc_fakes';
     final sysFakes = '${config['configDir']}/sys_fakes';
 
+    // Match proot-distro's login invocation
     return [
-      '-0',
-      '--link2symlink',
+      '-0',                           // Fake root
+      '--link2symlink',               // Hard links → symlinks
+      '-L',                           // Fix lstat for symlinks
+      '--sysvipc',                    // System V IPC (dpkg needs this)
+      '--kill-on-exit',               // Clean up children
       '--kernel-release=6.2.1-PRoot-Distro',
       '-r', config['rootfsDir']!,
+      // Device binds
       '-b', '/dev',
       '-b', '/proc',
       '-b', '/sys',
-      // Fake proc entries (matching proot-distro)
+      '-b', '/dev/urandom:/dev/random',
+      '-b', '/proc/self/fd:/dev/fd',
+      '-b', '/proc/self/fd/0:/dev/stdin',
+      '-b', '/proc/self/fd/1:/dev/stdout',
+      '-b', '/proc/self/fd/2:/dev/stderr',
+      // Fake proc entries (Android restricts these)
       '-b', '$procFakes/loadavg:/proc/loadavg',
       '-b', '$procFakes/stat:/proc/stat',
       '-b', '$procFakes/uptime:/proc/uptime',

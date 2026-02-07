@@ -23,19 +23,28 @@ class ProcessManager(
         val procFakes = "$configDir/proc_fakes"
         val sysFakes = "$configDir/sys_fakes"
 
-        // Bind mounts match proot-distro's setup_fake_sysdata approach:
-        // Android restricts many /proc and /sys entries, so we provide
-        // static fake files to prevent crashes (e.g. libgcrypt SIGABRT).
+        // Match proot-distro's login invocation as closely as possible.
+        // Missing flags/binds were causing dpkg error 100 (can't exec).
         return listOf(
             prootPath,
-            "-0",
-            "--link2symlink",
+            "-0",                           // Fake root (UID 0)
+            "--link2symlink",               // Convert hard links to symlinks
+            "-L",                           // Fix lstat for symlinks
+            "--sysvipc",                    // Enable System V IPC (dpkg needs this)
+            "--kill-on-exit",               // Clean up child processes
             "--kernel-release=6.2.1-PRoot-Distro",
             "-r", rootfsDir,
+            // Device binds
             "-b", "/dev",
             "-b", "/proc",
             "-b", "/sys",
-            // Fake proc entries (from proot-distro)
+            "-b", "/dev/urandom:/dev/random",
+            // fd/stdin/stdout/stderr (package scripts need these)
+            "-b", "/proc/self/fd:/dev/fd",
+            "-b", "/proc/self/fd/0:/dev/stdin",
+            "-b", "/proc/self/fd/1:/dev/stdout",
+            "-b", "/proc/self/fd/2:/dev/stderr",
+            // Fake proc entries (Android restricts these)
             "-b", "$procFakes/loadavg:/proc/loadavg",
             "-b", "$procFakes/stat:/proc/stat",
             "-b", "$procFakes/uptime:/proc/uptime",

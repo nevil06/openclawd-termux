@@ -251,16 +251,17 @@ class BootstrapManager(
         policyRc.writeText("#!/bin/sh\nexit 101\n")
         policyRc.setExecutable(true, false)
 
-        // 5. Create a stub for /usr/sbin/groupadd and /usr/sbin/useradd
-        //    Post-install scripts often try to create system users/groups which
-        //    fails in proot. Provide no-op stubs that always succeed.
-        for (cmd in listOf("groupadd", "useradd", "usermod")) {
-            val stub = File("$rootfsDir/usr/local/sbin/$cmd")
-            stub.parentFile?.mkdirs()
-            if (!stub.exists()) {
-                stub.writeText("#!/bin/sh\n# proot stub - operations faked by proot -0\nexit 0\n")
-                stub.setExecutable(true, false)
-            }
+        // 5. Register Android user/groups in rootfs (matching proot-distro).
+        //    dpkg and apt need valid user/group databases.
+        registerAndroidUsers()
+
+        // 6. Write /etc/hosts (some post-install scripts need hostname resolution)
+        val hosts = File("$rootfsDir/etc/hosts")
+        if (!hosts.exists() || !hosts.readText().contains("localhost")) {
+            hosts.writeText(
+                "127.0.0.1   localhost.localdomain localhost\n" +
+                "::1         localhost.localdomain localhost ip6-localhost ip6-loopback\n"
+            )
         }
 
         // 6. Fix executable permissions on critical directories.
@@ -320,6 +321,70 @@ class BootstrapManager(
             } else if (file.name.endsWith(".so") || file.name.contains(".so.")) {
                 file.setReadable(true, false)
                 file.setExecutable(true, false)
+            }
+        }
+    }
+
+    /**
+     * Register Android UID/GID in the rootfs user databases,
+     * matching what proot-distro does during installation.
+     * This ensures dpkg/apt can resolve user/group names.
+     */
+    private fun registerAndroidUsers() {
+        val uid = android.os.Process.myUid()
+        val gid = uid // On Android, primary GID == UID
+
+        // Ensure files are writable
+        for (name in listOf("passwd", "shadow", "group", "gshadow")) {
+            val f = File("$rootfsDir/etc/$name")
+            if (f.exists()) f.setWritable(true, false)
+        }
+
+        // Add Android app user to /etc/passwd
+        val passwd = File("$rootfsDir/etc/passwd")
+        if (passwd.exists()) {
+            val content = passwd.readText()
+            if (!content.contains("aid_android")) {
+                passwd.appendText("aid_android:x:$uid:$gid:Android:/:/sbin/nologin\n")
+            }
+        }
+
+        // Add to /etc/shadow
+        val shadow = File("$rootfsDir/etc/shadow")
+        if (shadow.exists()) {
+            val content = shadow.readText()
+            if (!content.contains("aid_android")) {
+                shadow.appendText("aid_android:*:18446:0:99999:7:::\n")
+            }
+        }
+
+        // Add Android groups to /etc/group
+        val group = File("$rootfsDir/etc/group")
+        if (group.exists()) {
+            val content = group.readText()
+            // Add common Android groups that packages might reference
+            val groups = mapOf(
+                "aid_inet" to 3003,       // Internet access
+                "aid_net_raw" to 3004,    // Raw sockets
+                "aid_sdcard_rw" to 1015,  // SD card write
+                "aid_android" to gid,     // App's own group
+            )
+            for ((name, id) in groups) {
+                if (!content.contains(name)) {
+                    group.appendText("$name:x:$id:root,aid_android\n")
+                }
+            }
+        }
+
+        // Add to /etc/gshadow
+        val gshadow = File("$rootfsDir/etc/gshadow")
+        if (gshadow.exists()) {
+            val content = gshadow.readText()
+            val groups = listOf("aid_inet", "aid_net_raw", "aid_sdcard_rw", "aid_android")
+            for (name in groups) {
+                if (!content.contains(name)) {
+                    gshadow.appendText("$name:*::root,aid_android\n")
+                }
             }
         }
     }
