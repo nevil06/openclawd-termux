@@ -146,18 +146,55 @@ class BootstrapService {
         progress: 0.25,
         message: 'Installing base packages via dpkg...',
       ));
+      // Run dpkg -i directly (bypasses APT's fork→exec that fails on Android 10+).
+      // Let errors through so we can diagnose issues, but don't abort on partial
+      // failures since dependency ordering may cause some packages to fail first.
+      try {
+        await NativeBridge.runInProot(
+          'dpkg --force-depends --force-overwrite --force-confnew '
+          '-i /var/cache/apt/archives/*.deb',
+        );
+      } catch (e) {
+        // dpkg -i with unordered debs often exits non-zero due to dependency
+        // issues; --configure -a below will resolve them.
+      }
+
+      // Fix permissions on newly installed binaries (dpkg inside proot may
+      // not set execute bits correctly on Android's filesystem)
       await NativeBridge.runInProot(
-        'dpkg --force-depends --force-overwrite --force-confnew '
-        '-i /var/cache/apt/archives/*.deb 2>&1 || true',
+        'chmod -R 755 /usr/bin /usr/sbin /bin /sbin 2>/dev/null; '
+        'chmod -R +x /usr/lib/apt/ /usr/lib/dpkg/ '
+        '/var/lib/dpkg/info/ 2>/dev/null; '
+        'echo chmod_done',
       );
 
-      // Configure any packages left unconfigured and fix dependencies
-      await NativeBridge.runInProot(
-        'dpkg --configure -a --force-all 2>&1 || true',
-      );
+      // Configure any packages left unconfigured
+      onProgress(const SetupState(
+        step: SetupStep.installingNode,
+        progress: 0.3,
+        message: 'Configuring packages...',
+      ));
+      try {
+        await NativeBridge.runInProot(
+          'dpkg --configure -a --force-all',
+        );
+      } catch (e) {
+        // Some post-inst scripts may fail in proot, continue anyway
+      }
 
       // Verify curl is available before proceeding
-      await NativeBridge.runInProot('which curl');
+      try {
+        await NativeBridge.runInProot('which curl');
+      } catch (e) {
+        // curl not found — show what dpkg thinks about it for diagnostics
+        final status = await NativeBridge.runInProot(
+          'dpkg -l curl 2>&1 || echo "curl package not found"; '
+          'ls -la /usr/bin/curl 2>&1 || echo "/usr/bin/curl missing"',
+        );
+        throw Exception(
+          'curl not installed after dpkg. Status: $status',
+        );
+      }
 
       onProgress(const SetupState(
         step: SetupStep.installingNode,
@@ -183,13 +220,25 @@ class BootstrapService {
         progress: 0.75,
         message: 'Installing Node.js via dpkg...',
       ));
+      try {
+        await NativeBridge.runInProot(
+          'dpkg --force-depends --force-overwrite --force-confnew '
+          '-i /var/cache/apt/archives/*.deb',
+        );
+      } catch (e) {
+        // Dependency ordering issues; configure below will resolve
+      }
       await NativeBridge.runInProot(
-        'dpkg --force-depends --force-overwrite --force-confnew '
-        '-i /var/cache/apt/archives/*.deb 2>&1 || true',
+        'chmod -R 755 /usr/bin /usr/sbin /bin /sbin 2>/dev/null; '
+        'echo chmod_done',
       );
-      await NativeBridge.runInProot(
-        'dpkg --configure -a --force-all 2>&1 || true',
-      );
+      try {
+        await NativeBridge.runInProot(
+          'dpkg --configure -a --force-all',
+        );
+      } catch (e) {
+        // Some post-inst scripts may fail in proot
+      }
 
       onProgress(const SetupState(
         step: SetupStep.installingNode,
