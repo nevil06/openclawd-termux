@@ -68,8 +68,37 @@ class BootstrapManager(
         val bypassDir = File("$rootfsDir/root/.openclawd")
         bypassDir.mkdirs()
 
-        // Copy bionic bypass from Flutter assets
-        val bypassContent = context.assets.open("bionic_bypass.js").bufferedReader().readText()
+        val bypassContent = """
+// OpenClawd Bionic Bypass - Auto-generated
+const os = require('os');
+const originalNetworkInterfaces = os.networkInterfaces;
+
+os.networkInterfaces = function() {
+  try {
+    const interfaces = originalNetworkInterfaces.call(os);
+    if (interfaces && Object.keys(interfaces).length > 0) {
+      return interfaces;
+    }
+  } catch (e) {
+    // Bionic blocked the call, use fallback
+  }
+
+  // Return mock loopback interface
+  return {
+    lo: [
+      {
+        address: '127.0.0.1',
+        netmask: '255.0.0.0',
+        family: 'IPv4',
+        mac: '00:00:00:00:00:00',
+        internal: true,
+        cidr: '127.0.0.1/8'
+      }
+    ]
+  };
+};
+""".trimIndent()
+
         File("$rootfsDir/root/.openclawd/bionic-bypass.js").writeText(bypassContent)
 
         // Patch .bashrc
@@ -86,8 +115,7 @@ class BootstrapManager(
         val configDir = File(this.configDir)
         configDir.mkdirs()
 
-        val resolvContent = context.assets.open("resolv.conf").bufferedReader().readText()
-        File("$configDir/resolv.conf").writeText(resolvContent)
+        File("$configDir/resolv.conf").writeText("nameserver 8.8.8.8\nnameserver 8.8.4.4\n")
     }
 
     private fun checkNodeInProot(): Boolean {
