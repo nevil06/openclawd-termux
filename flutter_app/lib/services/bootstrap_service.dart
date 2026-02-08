@@ -224,7 +224,33 @@ class BootstrapService {
         progress: 0.0,
         message: 'Installing OpenClaw (this may take a few minutes)...',
       ));
-      await NativeBridge.runInProot('node $npmCli install -g openclaw');
+      // --ignore-scripts: npm runs postinstall scripts by forking child
+      // processes, which fails in proot (level 2+ fork). Native modules
+      // (sharp, node-pty) download prebuilts in postinstall — we handle
+      // sharp manually below; node-pty is optional for gateway mode.
+      await NativeBridge.runInProot(
+        'node $npmCli install -g openclaw --ignore-scripts',
+        timeout: 1800,
+      );
+
+      onProgress(const SetupState(
+        step: SetupStep.installingOpenClaw,
+        progress: 0.7,
+        message: 'Setting up native modules...',
+      ));
+      // sharp needs its prebuilt libvips binary for linux-arm64.
+      // Normally postinstall fetches it; we download manually.
+      try {
+        await NativeBridge.runInProot(
+          'cd /usr/lib/node_modules/openclaw/node_modules/sharp && '
+          'node install/check 2>/dev/null || '
+          'node $npmCli rebuild sharp --ignore-scripts 2>/dev/null; '
+          'echo sharp_done',
+          timeout: 300,
+        );
+      } catch (_) {
+        // sharp is optional for core gateway functionality
+      }
 
       onProgress(const SetupState(
         step: SetupStep.installingOpenClaw,
