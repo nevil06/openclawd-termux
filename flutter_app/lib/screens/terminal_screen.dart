@@ -32,16 +32,9 @@ class _TerminalScreenState extends State<TerminalScreen> {
       _pty = Pty.start(
         config['executable']!,
         arguments: args,
-        environment: {
-          'PROOT_TMP_DIR': config['PROOT_TMP_DIR']!,
-          'PROOT_NO_SECCOMP': config['PROOT_NO_SECCOMP']!,
-          'PROOT_LOADER': config['PROOT_LOADER']!,
-          'PROOT_LOADER_32': config['PROOT_LOADER_32']!,
-          'LD_LIBRARY_PATH': config['LD_LIBRARY_PATH']!,
-          'HOME': '/root',
-          'TERM': 'xterm-256color',
-          'LANG': 'en_US.UTF-8',
-        },
+        // Host-side env: only proot-specific vars.
+        // Guest env is set via env -i in buildProotArgs.
+        environment: TerminalService.buildHostEnv(config),
         columns: _terminal.viewWidth,
         rows: _terminal.viewHeight,
       );

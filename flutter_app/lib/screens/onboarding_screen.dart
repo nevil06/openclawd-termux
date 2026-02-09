@@ -39,11 +39,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final config = await TerminalService.getProotShellConfig();
       final args = TerminalService.buildProotArgs(config);
 
-      // Replace the login shell with a command that runs onboarding
-      // buildProotArgs ends with ['/bin/bash', '-l']
-      // Replace with ['/bin/bash', '-lc', 'openclaw onboarding']
+      // Replace the login shell with a command that runs onboarding.
+      // buildProotArgs ends with [..., '/bin/bash', '-l']
+      // Replace with [..., '/bin/bash', '-lc', 'openclaw onboarding']
       final onboardingArgs = List<String>.from(args);
-      // Remove last two entries ('/bin/bash', '-l') and replace
       onboardingArgs.removeLast(); // remove '-l'
       onboardingArgs.removeLast(); // remove '/bin/bash'
       onboardingArgs.addAll([
@@ -59,16 +58,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _pty = Pty.start(
         config['executable']!,
         arguments: onboardingArgs,
-        environment: {
-          'PROOT_TMP_DIR': config['PROOT_TMP_DIR']!,
-          'PROOT_NO_SECCOMP': config['PROOT_NO_SECCOMP']!,
-          'PROOT_LOADER': config['PROOT_LOADER']!,
-          'PROOT_LOADER_32': config['PROOT_LOADER_32']!,
-          'LD_LIBRARY_PATH': config['LD_LIBRARY_PATH']!,
-          'HOME': '/root',
-          'TERM': 'xterm-256color',
-          'LANG': 'en_US.UTF-8',
-        },
+        // Host-side env: only proot-specific vars.
+        // Guest env is set via env -i in buildProotArgs.
+        environment: TerminalService.buildHostEnv(config),
         columns: _terminal.viewWidth,
         rows: _terminal.viewHeight,
       );
