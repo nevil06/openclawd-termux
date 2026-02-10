@@ -8,9 +8,13 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -259,6 +263,7 @@ class MainActivity : FlutterActivity() {
         }
 
         createUrlNotificationChannel()
+        requestNotificationPermission()
 
         EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENT_CHANNEL).setStreamHandler(
             object : EventChannel.StreamHandler {
@@ -270,6 +275,20 @@ class MainActivity : FlutterActivity() {
                 }
             }
         )
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    NOTIFICATION_PERMISSION_REQUEST
+                )
+            }
+        }
     }
 
     private fun createUrlNotificationChannel() {
@@ -321,5 +340,6 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         const val URL_CHANNEL_ID = "openclaw_urls"
+        const val NOTIFICATION_PERMISSION_REQUEST = 1001
     }
 }
