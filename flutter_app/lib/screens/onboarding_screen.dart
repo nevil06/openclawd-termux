@@ -175,12 +175,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return text.isEmpty ? null : text;
   }
 
-  /// Strip box-drawing chars and whitespace to reconstruct URLs
-  /// that got split by terminal line wrapping / TUI borders.
+  /// Extract a clean URL from selected text by stripping box-drawing
+  /// chars and rejoining lines, but splitting on `http` boundaries
+  /// so concatenated URLs don't merge into one.
   String? _extractUrl(String text) {
     final clean = text.replaceAll(_boxDrawing, '').replaceAll(RegExp(r'\s+'), '');
-    final match = _anyUrlRegex.firstMatch(clean);
-    return match?.group(0);
+    // Split before each http(s):// so concatenated URLs become separate
+    final parts = clean.split(RegExp(r'(?=https?://)'));
+    // Return the longest URL match (token URLs are longest)
+    String? best;
+    for (final part in parts) {
+      final match = _anyUrlRegex.firstMatch(part);
+      if (match != null) {
+        final url = match.group(0)!;
+        if (best == null || url.length > best.length) {
+          best = url;
+        }
+      }
+    }
+    return best;
   }
 
   void _copySelection() {
@@ -245,8 +258,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _handleTap(TapUpDetails details, CellOffset offset) {
-    // Join adjacent lines and strip box-drawing chars to reconstruct
-    // URLs that wrap across terminal lines or TUI borders.
+    // Join adjacent lines and extract URL, handling wrapped URLs
+    // and TUI box-drawing characters.
     final totalLines = _terminal.buffer.lines.length;
     final startRow = (offset.y - 2).clamp(0, totalLines - 1);
     final endRow = (offset.y + 2).clamp(0, totalLines - 1);
@@ -255,14 +268,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     for (int row = startRow; row <= endRow; row++) {
       sb.write(_getLineText(row).trimRight());
     }
-    final combined = sb.toString()
-        .replaceAll(_boxDrawing, '')
-        .replaceAll(RegExp(r'\s+'), '');
-    if (combined.isEmpty) return;
-
-    final match = _anyUrlRegex.firstMatch(combined);
-    if (match != null) {
-      _openUrl(match.group(0)!);
+    final url = _extractUrl(sb.toString());
+    if (url != null) {
+      _openUrl(url);
     }
   }
 
