@@ -34,6 +34,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   String? _error;
   final _tokenUrlRegex = RegExp(r'https?://(?:localhost|127\.0\.0\.1):18789[^\s]*');
   static final _ansiEscape = RegExp(r'\x1b\[[0-9;]*[a-zA-Z]');
+  static final _completionPattern = RegExp(
+    r'onboard(ing)?\s+(is\s+)?complete|successfully\s+onboarded|setup\s+complete',
+    caseSensitive: false,
+  );
   String _outputBuffer = '';
 
   static const _fontFallback = [
@@ -98,6 +102,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         final match = _tokenUrlRegex.firstMatch(clean);
         if (match != null) {
           _saveTokenUrl(match.group(0)!);
+        }
+        // Detect onboarding completion from output text
+        if (!_finished && _completionPattern.hasMatch(clean)) {
+          if (mounted) {
+            setState(() => _finished = true);
+          }
         }
       });
 
