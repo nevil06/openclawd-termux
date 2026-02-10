@@ -50,7 +50,7 @@ android {
     defaultConfig {
         applicationId = "com.nxg.openclawproot"
         minSdk = 29
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
     }
