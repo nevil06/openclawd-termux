@@ -1,25 +1,40 @@
-# OpenClawd-Termux
+# OpenClaw
 
+[![Build Flutter APK & AAB](https://github.com/mithun50/openclawd-termux/actions/workflows/flutter-build.yml/badge.svg)](https://github.com/mithun50/openclawd-termux/actions/workflows/flutter-build.yml)
 [![npm version](https://img.shields.io/npm/v/openclawd-termux?color=blue&label=npm)](https://www.npmjs.com/package/openclawd-termux)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green?logo=node.js)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-22-green?logo=node.js)](https://nodejs.org/)
 [![Android](https://img.shields.io/badge/Android-10%2B-brightgreen?logo=android)](https://www.android.com/)
-[![Termux](https://img.shields.io/badge/Termux-F--Droid-orange)](https://f-droid.org/packages/com.termux/)
+[![Flutter](https://img.shields.io/badge/Flutter-3.24-02569B?logo=flutter)](https://flutter.dev/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/mithun50/openclawd-termux/pulls)
 
-> Run OpenClaw AI Gateway on Android — standalone Flutter app with built-in terminal, web dashboard, and one-tap setup. Also available as a Termux CLI package.
+<p align="center">
+  <img src="assets/mockup.png" alt="OpenClaw App Mockup" width="700"/>
+</p>
+
+> Run **OpenClaw AI Gateway** on Android — standalone Flutter app with built-in terminal, web dashboard, and one-tap setup. Also available as a Termux CLI package.
+
+---
+
+## Screenshots
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-Android-blue" alt="Platform">
-  <img src="https://img.shields.io/badge/Flutter-3.2%2B-02569B?logo=flutter" alt="Flutter">
-  <img src="https://img.shields.io/badge/Status-Active-success" alt="Status">
+  <img src="assets/dashboard.png" alt="Dashboard" width="220"/>
+  <img src="assets/setupscreen.png" alt="Setup" width="220"/>
+  <img src="assets/onboardingscreen.png" alt="Onboarding" width="220"/>
+</p>
+
+<p align="center">
+  <img src="assets/websscreen.png" alt="Web Dashboard" width="220"/>
+  <img src="assets/logscreen.png" alt="Logs" width="220"/>
+  <img src="assets/settingsscreen.png" alt="Settings" width="220"/>
 </p>
 
 ---
 
-## What is OpenClawd?
+## What is OpenClaw?
 
-OpenClawd brings the [OpenClaw](https://github.com/anthropics/openclaw) AI gateway to Android. It sets up a full Ubuntu environment via proot, installs Node.js and OpenClaw, and provides a native Flutter UI to manage everything — no root required.
+OpenClaw brings the [OpenClaw](https://github.com/anthropics/openclaw) AI gateway to Android. It sets up a full Ubuntu environment via proot, installs Node.js and OpenClaw, and provides a native Flutter UI to manage everything — no root required.
 
 ### Two Ways to Use
 
@@ -44,7 +59,8 @@ OpenClawd brings the [OpenClaw](https://github.com/anthropics/openclaw) AI gatew
 - **View Logs** — Real-time gateway log viewer with search/filter
 - **Onboarding** — Configure API keys and binding directly in-app
 - **Settings** — Auto-start, battery optimization, system info, re-run setup
-- **Foreground Service** — Keeps the gateway alive in the background
+- **Foreground Service** — Keeps the gateway alive in the background with uptime tracking
+- **Setup Notifications** — Progress bar notifications during environment setup
 
 ### Termux CLI
 - **One-Command Setup** — Installs proot-distro, Ubuntu, Node.js 22, and OpenClaw
@@ -58,16 +74,19 @@ OpenClawd brings the [OpenClaw](https://github.com/anthropics/openclaw) AI gatew
 
 ### Flutter App (Recommended)
 
-1. Clone and build the APK:
-   ```bash
-   git clone https://github.com/mithun50/openclawd-termux.git
-   cd openclawd-termux/flutter_app
-   flutter build apk
-   ```
+1. Download the latest APK from [Releases](https://github.com/mithun50/openclawd-termux/releases)
 2. Install the APK on your Android device
 3. Open the app and tap **Begin Setup**
 4. After setup completes, configure your API keys in **Onboarding**
 5. Tap **Start Gateway** on the dashboard
+
+Or build from source:
+
+```bash
+git clone https://github.com/mithun50/openclawd-termux.git
+cd openclawd-termux/flutter_app
+flutter build apk --release
+```
 
 ### Termux CLI
 
@@ -90,8 +109,9 @@ openclawdx setup
 
 | Requirement | Details |
 |-------------|---------|
-| **Android** | 10 or higher |
+| **Android** | 10 or higher (API 29) |
 | **Storage** | ~500MB for Ubuntu + Node.js + OpenClaw |
+| **Architectures** | arm64-v8a, armeabi-v7a, x86_64 |
 | **Termux** (CLI only) | From [F-Droid](https://f-droid.org/packages/com.termux/) (NOT Play Store) |
 
 ---
@@ -335,10 +355,14 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Author
 
-**Mithun Gowda B**
+**Mithun Gowda B** | [NextGenX](https://play.google.com/store/apps/dev?id=8262374975871504599)
 
 - GitHub: [@mithun50](https://github.com/mithun50)
-- Email: mithungowda.b7411@gmail.com
+- Email: [mithungowda.b7411@gmail.com](mailto:mithungowda.b7411@gmail.com)
+- Instagram: [@nexgenxplorer_nxg](https://www.instagram.com/nexgenxplorer_nxg)
+- YouTube: [@nexgenxplorer](https://youtube.com/@nexgenxplorer?si=UG-wBC8UIyeT4bbw)
+- Play Store: [NextGenX Apps](https://play.google.com/store/apps/dev?id=8262374975871504599)
+- Contact: [nxgextra@gmail.com](mailto:nxgextra@gmail.com)
 
 ---
 
@@ -349,5 +373,5 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ---
 
 <p align="center">
-  Made with ❤️ for the Android community
+  Made with &#10084;&#65039; for the Android community by <a href="https://github.com/mithun50">Mithun Gowda B</a> | <b>NextGenX</b>
 </p>
