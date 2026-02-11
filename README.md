@@ -13,23 +13,24 @@
   <img src="assets/mockup.png" alt="OpenClaw App Mockup" width="700"/>
 </p>
 
-> Run **OpenClaw AI Gateway** on Android — standalone Flutter app with built-in terminal, web dashboard, and one-tap setup. Also available as a Termux CLI package.
+> Run **OpenClaw AI Gateway** on Android — standalone Flutter app with built-in terminal, web dashboard, optional dev tools, and one-tap setup. Also available as a Termux CLI package.
 
 ---
 
 ## Screenshots
 
-<p align="center">
-  <img src="assets/dashboard.png" alt="Dashboard" width="220"/>
-  <img src="assets/setupscreen.png" alt="Setup" width="220"/>
-  <img src="assets/onboardingscreen.png" alt="Onboarding" width="220"/>
-</p>
-
-<p align="center">
-  <img src="assets/websscreen.png" alt="Web Dashboard" width="220"/>
-  <img src="assets/logscreen.png" alt="Logs" width="220"/>
-  <img src="assets/settingsscreen.png" alt="Settings" width="220"/>
-</p>
+<table align="center">
+  <tr>
+    <td align="center"><img src="assets/dashboard.png" alt="Dashboard" width="220"/><br/><b>Dashboard</b></td>
+    <td align="center"><img src="assets/setupscreen.png" alt="Setup" width="220"/><br/><b>Setup Wizard</b></td>
+    <td align="center"><img src="assets/onboardingscreen.png" alt="Onboarding" width="220"/><br/><b>Onboarding</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/websscreen.png" alt="Web Dashboard" width="220"/><br/><b>Web Dashboard</b></td>
+    <td align="center"><img src="assets/logscreen.png" alt="Logs" width="220"/><br/><b>Logs</b></td>
+    <td align="center"><img src="assets/settingsscreen.png" alt="Settings" width="220"/><br/><b>Settings</b></td>
+  </tr>
+</table>
 
 ---
 
@@ -59,9 +60,24 @@ OpenClaw brings the [OpenClaw](https://github.com/anthropics/openclaw) AI gatewa
 - **Web Dashboard** — Embedded WebView loads the dashboard with authentication token
 - **View Logs** — Real-time gateway log viewer with search/filter
 - **Onboarding** — Configure API keys and binding directly in-app
-- **Settings** — Auto-start, battery optimization, system info, re-run setup
+- **Optional Packages** — Install Go (Golang) and Homebrew as optional dev tools from the setup wizard or dashboard
+- **Settings** — Auto-start, battery optimization, system info, package status, re-run setup
 - **Foreground Service** — Keeps the gateway alive in the background with uptime tracking
 - **Setup Notifications** — Progress bar notifications during environment setup
+
+### Optional Packages
+
+After the initial setup completes, you can optionally install development tools directly from the app:
+
+| Package | Install Method | Size |
+|---------|---------------|------|
+| **Go (Golang)** | `apt install golang` | ~150 MB |
+| **Homebrew** | Official installer (with root workaround) | ~500 MB |
+
+These are accessible from:
+- **Setup Wizard** — Package cards appear after setup completes
+- **Dashboard** — "Packages" card in Quick Actions
+- **Settings** — Shows installation status under System Info
 
 ### Termux CLI
 - **One-Command Setup** — Installs proot-distro, Ubuntu, Node.js 22, and OpenClaw
@@ -78,8 +94,9 @@ OpenClaw brings the [OpenClaw](https://github.com/anthropics/openclaw) AI gatewa
 1. Download the latest APK from [Releases](https://github.com/mithun50/openclawd-termux/releases)
 2. Install the APK on your Android device
 3. Open the app and tap **Begin Setup**
-4. After setup completes, configure your API keys in **Onboarding**
-5. Tap **Start Gateway** on the dashboard
+4. After setup completes, optionally install **Go** or **Homebrew** from the package cards
+5. Configure your API keys in **Onboarding**
+6. Tap **Start Gateway** on the dashboard
 
 Or build from source:
 
@@ -165,6 +182,7 @@ openclawdx gateway --verbose
 │  │   │  OpenClaw AI Gateway            │  │   │
 │  │   │  http://localhost:18789         │  │   │
 │  │   └─────────────────────────────────┘  │   │
+│  │   Optional: Go, Homebrew              │   │
 │  └────────────────────────────────────────┘   │
 └───────────────────────────────────────────────┘
 ```
@@ -177,24 +195,28 @@ flutter_app/lib/
 ├── constants.dart             # App constants, URLs, author info
 ├── models/
 │   ├── gateway_state.dart     # Gateway status, logs, token URL
-│   └── setup_state.dart       # Setup wizard progress
+│   ├── setup_state.dart       # Setup wizard progress
+│   └── optional_package.dart  # Optional package metadata (Go, Homebrew)
 ├── providers/
 │   ├── gateway_provider.dart  # Gateway state management
 │   └── setup_provider.dart    # Setup state management
 ├── screens/
 │   ├── splash_screen.dart     # Launch screen with routing
-│   ├── setup_wizard_screen.dart # First-time environment setup
-│   ├── onboarding_screen.dart # API key configuration terminal
-│   ├── dashboard_screen.dart  # Main dashboard with quick actions
-│   ├── terminal_screen.dart   # Full terminal emulator
-│   ├── web_dashboard_screen.dart # WebView for OpenClaw dashboard
-│   ├── logs_screen.dart       # Gateway log viewer
-│   └── settings_screen.dart   # App settings and about
+│   ├── setup_wizard_screen.dart    # First-time setup + optional packages
+│   ├── onboarding_screen.dart      # API key configuration terminal
+│   ├── dashboard_screen.dart       # Main dashboard with quick actions
+│   ├── terminal_screen.dart        # Full terminal emulator
+│   ├── web_dashboard_screen.dart   # WebView for OpenClaw dashboard
+│   ├── packages_screen.dart        # Optional package manager
+│   ├── package_install_screen.dart # Terminal-based package installer
+│   ├── logs_screen.dart            # Gateway log viewer
+│   └── settings_screen.dart        # App settings and about
 ├── services/
 │   ├── native_bridge.dart     # Kotlin platform channel bridge
 │   ├── gateway_service.dart   # Gateway lifecycle and health checks
 │   ├── terminal_service.dart  # proot shell configuration
 │   ├── bootstrap_service.dart # Environment setup orchestration
+│   ├── package_service.dart   # Optional package status checking
 │   └── preferences_service.dart # Persistent settings (token URL, etc.)
 └── widgets/
     ├── gateway_controls.dart  # Start/stop, URL display, copy button
