@@ -139,7 +139,7 @@ class NodeService {
       'minProtocol': 3,
       'maxProtocol': 3,
       'client': {
-        'id': 'openclaw-android-node',
+        'id': 'android-node',
         'version': AppConstants.version,
         'platform': 'android',
         'mode': 'node',
