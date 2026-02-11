@@ -50,13 +50,19 @@ class _PackageInstallScreenState extends State<PackageInstallScreen> {
     _terminal = Terminal(maxLines: 10000);
     _controller = TerminalController();
     NativeBridge.startTerminalService();
-    _startProcess();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startProcess();
+    });
   }
 
   Future<void> _startProcess() async {
     try {
       final config = await TerminalService.getProotShellConfig();
-      final args = TerminalService.buildProotArgs(config);
+      final args = TerminalService.buildProotArgs(
+        config,
+        columns: _terminal.viewWidth,
+        rows: _terminal.viewHeight,
+      );
 
       final command = widget.isUninstall
           ? widget.package.uninstallCommand
@@ -204,7 +210,7 @@ class _PackageInstallScreenState extends State<PackageInstallScreen> {
                 _terminal,
                 controller: _controller,
                 textStyle: const TerminalStyle(
-                  fontSize: 14,
+                  fontSize: 11,
                   height: 1.0,
                   fontFamily: 'DejaVuSansMono',
                   fontFamilyFallback: _fontFallback,
