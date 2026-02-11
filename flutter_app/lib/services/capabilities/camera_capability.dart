@@ -59,7 +59,7 @@ class CameraCapability extends CapabilityHandler {
       final bytes = await File(file.path).readAsBytes();
       final b64 = base64Encode(bytes);
       // Clean up temp file
-      await File(file.path).delete().catchError((_) {});
+      await File(file.path).delete().catchError((_) => File(file.path));
       return NodeFrame.response('', result: {
         'image': b64,
         'format': 'jpg',
@@ -81,7 +81,7 @@ class CameraCapability extends CapabilityHandler {
       final file = await controller.stopVideoRecording();
       final bytes = await File(file.path).readAsBytes();
       final b64 = base64Encode(bytes);
-      await File(file.path).delete().catchError((_) {});
+      await File(file.path).delete().catchError((_) => File(file.path));
       return NodeFrame.response('', result: {
         'video': b64,
         'format': 'mp4',

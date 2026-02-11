@@ -177,7 +177,7 @@ class NodeService {
       });
       final response = await _ws.sendRequest(
         pairReq,
-        timeout: Duration(milliseconds: AppConstants.pairingTimeoutMs),
+        timeout: const Duration(milliseconds: AppConstants.pairingTimeoutMs),
       );
 
       if (response.isError) {

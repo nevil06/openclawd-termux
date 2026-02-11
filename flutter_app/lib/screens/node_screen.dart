@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/node_state.dart';
 import '../providers/node_provider.dart';
 import '../services/preferences_service.dart';
 import '../widgets/node_controls.dart';

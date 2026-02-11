@@ -11,7 +11,7 @@ import '../services/capabilities/sensor_capability.dart';
 import '../services/capabilities/vibration_capability.dart';
 import '../services/node_service.dart';
 import '../services/preferences_service.dart';
-import 'gateway_provider.dart';
+
 
 class NodeProvider extends ChangeNotifier {
   final NodeService _nodeService = NodeService();
