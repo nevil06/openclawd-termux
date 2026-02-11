@@ -47,7 +47,9 @@ class LocationCapability extends CapabilityHandler {
       }
 
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
       return NodeFrame.response('', result: {
