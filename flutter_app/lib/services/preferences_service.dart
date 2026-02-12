@@ -10,6 +10,7 @@ class PreferencesService {
   static const _keyNodeGatewayHost = 'node_gateway_host';
   static const _keyNodeGatewayPort = 'node_gateway_port';
   static const _keyNodePublicKey = 'node_ed25519_public';
+  static const _keyNodeGatewayToken = 'node_gateway_token';
 
   late SharedPreferences _prefs;
 
@@ -57,6 +58,15 @@ class PreferencesService {
   }
 
   String? get nodePublicKey => _prefs.getString(_keyNodePublicKey);
+
+  String? get nodeGatewayToken => _prefs.getString(_keyNodeGatewayToken);
+  set nodeGatewayToken(String? value) {
+    if (value != null && value.isNotEmpty) {
+      _prefs.setString(_keyNodeGatewayToken, value);
+    } else {
+      _prefs.remove(_keyNodeGatewayToken);
+    }
+  }
 
   int? get nodeGatewayPort {
     final val = _prefs.getInt(_keyNodeGatewayPort);

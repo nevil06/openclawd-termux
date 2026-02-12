@@ -14,6 +14,7 @@ class NodeScreen extends StatefulWidget {
 class _NodeScreenState extends State<NodeScreen> {
   final _hostController = TextEditingController();
   final _portController = TextEditingController();
+  final _tokenController = TextEditingController();
   bool _isLocal = true;
   bool _loading = true;
 
@@ -28,10 +29,12 @@ class _NodeScreenState extends State<NodeScreen> {
     await prefs.init();
     final host = prefs.nodeGatewayHost ?? '127.0.0.1';
     final port = prefs.nodeGatewayPort ?? 18789;
+    final token = prefs.nodeGatewayToken ?? '';
     setState(() {
       _isLocal = host == '127.0.0.1' || host == 'localhost';
       _hostController.text = _isLocal ? '' : host;
       _portController.text = _isLocal ? '' : '$port';
+      _tokenController.text = _isLocal ? '' : token;
       _loading = false;
     });
   }
@@ -40,6 +43,7 @@ class _NodeScreenState extends State<NodeScreen> {
   void dispose() {
     _hostController.dispose();
     _portController.dispose();
+    _tokenController.dispose();
     super.dispose();
   }
 
@@ -108,12 +112,26 @@ class _NodeScreenState extends State<NodeScreen> {
                                 keyboardType: TextInputType.number,
                               ),
                               const SizedBox(height: 12),
+                              TextField(
+                                controller: _tokenController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Gateway Token',
+                                  hintText: 'Paste token from gateway dashboard URL',
+                                  helperText: 'Found in dashboard URL after #token=',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.key),
+                                ),
+                                obscureText: true,
+                              ),
+                              const SizedBox(height: 12),
                               FilledButton.icon(
                                 onPressed: () {
                                   final host = _hostController.text.trim();
                                   final port = int.tryParse(_portController.text.trim()) ?? 18789;
+                                  final token = _tokenController.text.trim();
                                   if (host.isNotEmpty) {
-                                    provider.connectRemote(host, port);
+                                    provider.connectRemote(host, port,
+                                        token: token.isNotEmpty ? token : null);
                                   }
                                 },
                                 icon: const Icon(Icons.link),

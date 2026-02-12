@@ -22,6 +22,8 @@ class NodeService {
   Stream<NodeState> get stateStream => _stateController.stream;
   NodeState get state => _state;
 
+  void clearCachedToken() => _gatewayAuthToken = null;
+
   void _updateState(NodeState newState) {
     _state = newState;
     _stateController.add(_state);
@@ -124,11 +126,21 @@ class NodeService {
     }
   }
 
-  /// Extract the gateway auth token from the dashboard URL
-  /// (e.g. http://127.0.0.1:18789/#token=abc123...).
+  /// Resolve the gateway auth token from available sources:
+  /// 1. Manually entered token (for remote gateways)
+  /// 2. Dashboard URL fragment (for local gateway)
   Future<String?> _readGatewayToken() async {
     final prefs = PreferencesService();
     await prefs.init();
+
+    // 1. Manual token (user-provided for remote gateway)
+    final manualToken = prefs.nodeGatewayToken;
+    if (manualToken != null && manualToken.isNotEmpty) {
+      _log('[NODE] Using manually configured gateway token');
+      return manualToken;
+    }
+
+    // 2. Extract from local dashboard URL
     final dashboardUrl = prefs.dashboardUrl;
     if (dashboardUrl != null) {
       final tokenMatch = RegExp(r'[#?&]token=([0-9a-fA-F]+)').firstMatch(dashboardUrl);
@@ -137,7 +149,8 @@ class NodeService {
         return tokenMatch.group(1);
       }
     }
-    _log('[NODE] Could not extract gateway token from dashboard URL');
+
+    _log('[NODE] No gateway token available');
     return null;
   }
 

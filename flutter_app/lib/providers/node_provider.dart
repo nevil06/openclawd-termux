@@ -122,12 +122,15 @@ class NodeProvider extends ChangeNotifier {
     await _nodeService.disable();
   }
 
-  Future<void> connectRemote(String host, int port) async {
+  Future<void> connectRemote(String host, int port, {String? token}) async {
     final prefs = PreferencesService();
     await prefs.init();
     prefs.nodeGatewayHost = host;
     prefs.nodeGatewayPort = port;
+    prefs.nodeGatewayToken = token;
     prefs.nodeEnabled = true;
+    // Clear cached token so it re-reads on next connect
+    _nodeService.clearCachedToken();
     await _nodeService.connect(host: host, port: port);
   }
 
