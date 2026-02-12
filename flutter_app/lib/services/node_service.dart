@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import '../constants.dart';
 import '../models/node_frame.dart';
 import '../models/node_state.dart';
@@ -123,35 +122,47 @@ class NodeService {
 
   /// Build and send the `connect` request per Gateway Protocol v3.
   Future<void> _sendConnect(String nonce) async {
-    final signature = await _identity.signChallenge(nonce);
     final prefs = PreferencesService();
     await prefs.init();
     final token = prefs.nodeDeviceToken;
 
-    final publicKeyBytes = base64Decode(
-      prefs.nodePublicKey ?? '',
+    const clientId = 'node-host';
+    const clientMode = 'node';
+    const role = AppConstants.nodeRole;
+    const scopes = <String>['node.device'];
+    final signedAtMs = DateTime.now().millisecondsSinceEpoch;
+
+    // Build the structured payload the gateway verifies:
+    // "v2|deviceId|clientId|clientMode|role|scopes|signedAtMs|token|nonce"
+    final authPayload = _identity.buildAuthPayload(
+      clientId: clientId,
+      clientMode: clientMode,
+      role: role,
+      scopes: scopes,
+      signedAtMs: signedAtMs,
+      token: token,
+      nonce: nonce,
     );
-    final publicKeyHex = publicKeyBytes.isNotEmpty
-        ? publicKeyBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join()
-        : _identity.deviceId;
+    final signature = await _identity.signPayload(authPayload);
 
     final connectFrame = NodeFrame.request('connect', {
       'minProtocol': 3,
       'maxProtocol': 3,
       'client': {
-        'id': 'node-host',
+        'id': clientId,
         'version': AppConstants.version,
         'platform': 'android',
-        'mode': 'node',
+        'mode': clientMode,
       },
-      'role': AppConstants.nodeRole,
+      'role': role,
+      'scopes': scopes,
       if (token != null) 'auth': {'token': token},
       'device': {
         'id': _identity.deviceId,
-        'publicKey': publicKeyHex,
+        'publicKey': _identity.publicKeyBase64Url,
         'signature': signature,
         'nonce': nonce,
-        'signedAt': DateTime.now().millisecondsSinceEpoch,
+        'signedAt': signedAtMs,
       },
     });
 

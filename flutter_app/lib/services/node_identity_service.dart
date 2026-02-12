@@ -10,8 +10,12 @@ class NodeIdentityService {
 
   late SimpleKeyPair _keyPair;
   late String _deviceId;
+  late String _publicKeyBase64Url;
 
   String get deviceId => _deviceId;
+
+  /// Raw 32-byte public key encoded as base64url (no padding).
+  String get publicKeyBase64Url => _publicKeyBase64Url;
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -28,6 +32,7 @@ class NodeIdentityService {
         type: KeyPairType.ed25519,
       );
       _deviceId = storedDeviceId;
+      _publicKeyBase64Url = _toBase64Url(publicBytes);
     } else {
       await _generateAndStore(prefs);
     }
@@ -47,19 +52,52 @@ class NodeIdentityService {
         .map((b) => b.toRadixString(16).padLeft(2, '0'))
         .join();
 
+    _publicKeyBase64Url = _toBase64Url(publicBytes);
+
     final privateBytes = await _keyPair.extractPrivateKeyBytes();
     await prefs.setString(_keyPrivate, base64Encode(privateBytes));
     await prefs.setString(_keyPublic, base64Encode(publicBytes));
     await prefs.setString(_keyDeviceId, _deviceId);
   }
 
-  /// Sign a challenge nonce with Ed25519 private key.
-  /// The nonce is signed as raw UTF-8 bytes (gateway sends UUID-format nonces).
-  /// Returns base64-encoded signature.
-  Future<String> signChallenge(String nonce) async {
-    final nonceBytes = utf8.encode(nonce);
+  /// Build the device auth payload that the gateway expects to verify.
+  /// Format: "v2|deviceId|clientId|clientMode|role|scopes|signedAtMs|token|nonce"
+  String buildAuthPayload({
+    required String clientId,
+    required String clientMode,
+    required String role,
+    required List<String> scopes,
+    required int signedAtMs,
+    String? token,
+    String? nonce,
+  }) {
+    final parts = [
+      nonce != null ? 'v2' : 'v1',
+      _deviceId,
+      clientId,
+      clientMode,
+      role,
+      scopes.join(','),
+      signedAtMs.toString(),
+      token ?? '',
+    ];
+    if (nonce != null) {
+      parts.add(nonce);
+    }
+    return parts.join('|');
+  }
+
+  /// Sign the auth payload with Ed25519 private key.
+  /// Returns base64url-encoded signature (no padding).
+  Future<String> signPayload(String payload) async {
+    final payloadBytes = utf8.encode(payload);
     final algorithm = Ed25519();
-    final signature = await algorithm.sign(nonceBytes, keyPair: _keyPair);
-    return base64Encode(signature.bytes);
+    final signature = await algorithm.sign(payloadBytes, keyPair: _keyPair);
+    return _toBase64Url(Uint8List.fromList(signature.bytes));
+  }
+
+  /// Base64url encode without padding (matches gateway's format).
+  static String _toBase64Url(List<int> bytes) {
+    return base64Url.encode(bytes).replaceAll('=', '');
   }
 }
