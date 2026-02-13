@@ -74,20 +74,20 @@ class _NodeScreenState extends State<NodeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             RadioGroup<bool>(
-                              value: _isLocal,
-                              onChanged: (value) {
-                                setState(() => _isLocal = value);
+                              groupValue: _isLocal,
+                              onChanged: (bool? value) {
+                                if (value != null) setState(() => _isLocal = value);
                               },
-                              child: Column(
+                              child: const Column(
                                 children: [
                                   RadioListTile<bool>(
-                                    title: const Text('Local Gateway'),
-                                    subtitle: const Text('Auto-pair with gateway on this device'),
+                                    title: Text('Local Gateway'),
+                                    subtitle: Text('Auto-pair with gateway on this device'),
                                     value: true,
                                   ),
                                   RadioListTile<bool>(
-                                    title: const Text('Remote Gateway'),
-                                    subtitle: const Text('Connect to a gateway on another device'),
+                                    title: Text('Remote Gateway'),
+                                    subtitle: Text('Connect to a gateway on another device'),
                                     value: false,
                                   ),
                                 ],
