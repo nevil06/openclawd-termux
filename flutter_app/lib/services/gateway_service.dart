@@ -41,6 +41,9 @@ class GatewayService {
 
     final alreadyRunning = await NativeBridge.isGatewayRunning();
     if (alreadyRunning) {
+      // Write allowCommands config so the next gateway restart picks it up,
+      // and in case the running gateway supports config hot-reload.
+      await _writeNodeAllowConfig();
       _updateState(_state.copyWith(
         status: GatewayStatus.starting,
         dashboardUrl: savedUrl,

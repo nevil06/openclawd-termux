@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../models/node_frame.dart';
@@ -43,6 +44,16 @@ class LocationCapability extends CapabilityHandler {
     }
   }
 
+  NodeFrame _positionToFrame(Position position) {
+    return NodeFrame.response('', payload: {
+      'lat': position.latitude,
+      'lng': position.longitude,
+      'accuracy': position.accuracy,
+      'altitude': position.altitude,
+      'timestamp': position.timestamp.toIso8601String(),
+    });
+  }
+
   Future<NodeFrame> _getLocation(Map<String, dynamic> params) async {
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -53,17 +64,23 @@ class LocationCapability extends CapabilityHandler {
         });
       }
 
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      return NodeFrame.response('', payload: {
-        'lat': position.latitude,
-        'lng': position.longitude,
-        'accuracy': position.accuracy,
-        'altitude': position.altitude,
-        'timestamp': position.timestamp.toIso8601String(),
-      });
+      try {
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 10),
+        );
+        return _positionToFrame(position);
+      } on TimeoutException {
+        // GPS fix took too long, fall back to last known position
+        final last = await Geolocator.getLastKnownPosition();
+        if (last != null) {
+          return _positionToFrame(last);
+        }
+        return NodeFrame.response('', error: {
+          'code': 'LOCATION_TIMEOUT',
+          'message': 'Could not get location within 10 seconds and no cached position available',
+        });
+      }
     } catch (e) {
       return NodeFrame.response('', error: {
         'code': 'LOCATION_ERROR',
